@@ -1,0 +1,35 @@
+/* asdasd */
+// asdkjaldajla
+pkg hello = 123 {
+  enum color : int {
+    red   = 1,
+    green = 2,
+    blue  = 3
+  }
+
+  def xxx = 1 {
+    id : int, /* djaklds */
+    name : string,
+    items : list {
+      item_id : int64,
+      item_name : string,
+      sublist : list {
+        a : int
+      }
+    },
+    items2 : list {
+      item_id : int64,
+      item_name : string,
+      sublist : list {
+        a : int
+      }
+    }
+  }
+
+  def yyy = 2 {
+    hash : string,
+    time : int
+  }
+}
+
+/* alskdj */
