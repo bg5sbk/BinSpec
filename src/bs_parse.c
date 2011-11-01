@@ -387,13 +387,17 @@ static void parse_def(context *ctx, bs_pkg *pkg) {
 
     char *name = t.str;
     size_t name_len = t.len;
+    int id = 0;
 
-    LOOKUP('=', '=');
-    LOOKUP(TK_NUM, BS_ERR_MISS_ID);
+    t = next_token(ctx);
 
-    int id = parse_int(t.str, t.len);
+    if ('=' == t.type) {
+        LOOKUP(TK_NUM, BS_ERR_MISS_ID);
+        id = parse_int(t.str, t.len);
+        t = next_token(ctx);
+    }
 
-    LOOKUP('{', '{');
+    LOOKUP2('{', '{');
 
     bs_def *def = bs_def_new(pkg, id, name, name_len + 0);
     bs_def_list_add(pkg->defs, def);
