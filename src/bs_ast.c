@@ -14,27 +14,34 @@ LIST_IMP_P(bs_enum_item_list, bs_enum_item *, bs_enum_item_free);
 bs_doc *bs_doc_new() {
     bs_doc *doc = (bs_doc *)malloc(sizeof(bs_doc));
 
-    doc->pkgs = bs_pkg_list_new(20);
+    doc->root_pkg = bs_pkg_new(doc, NULL, 0, NULL, 0);
 
     return doc;
 }
 
 void bs_doc_free(bs_doc *doc) {
-    bs_pkg_list_free(doc->pkgs);
+    bs_pkg_free(doc->root_pkg);
     free(doc);
 }
 
-bs_pkg *bs_pkg_new(bs_doc *doc, int id, char *name, size_t name_len) {
+bs_pkg *bs_pkg_new(bs_doc *doc, bs_pkg *parent, int id, char *name, size_t name_len) {
     bs_pkg *pkg = (bs_pkg *)malloc(sizeof(bs_pkg));
-    
-    char *name2 = (char *)malloc(name_len);
-    
+     
     pkg->pkgs = bs_pkg_list_new(10);
     pkg->defs = bs_def_list_new(20);
     pkg->enums = bs_enum_list_new(5);
-    pkg->name = strncpy(name2, name, name_len);
-    pkg->name_len = name_len - 1;
+
+    if (name != NULL) {
+        char *name2 = (char *)malloc(name_len + 1);
+        pkg->name = strncpy(name2, name, name_len);
+        pkg->name_len = name_len;
+    } else {
+        pkg->name = NULL;
+        pkg->name_len = 0;
+    }
+
     pkg->doc  = doc;
+    pkg->pkg  = parent;
     pkg->id   = id;
 
     return pkg;
@@ -43,6 +50,7 @@ bs_pkg *bs_pkg_new(bs_doc *doc, int id, char *name, size_t name_len) {
 void bs_pkg_free(bs_pkg *pkg) {
     bs_pkg_list_free(pkg->pkgs);
     bs_def_list_free(pkg->defs);
+    bs_enum_list_free(pkg->enums);
 
     free(pkg->name);
     free(pkg);
@@ -51,11 +59,12 @@ void bs_pkg_free(bs_pkg *pkg) {
 bs_def *bs_def_new(bs_pkg *pkg, int id, char *name, size_t name_len) {
     bs_def *def = (bs_def *)malloc(sizeof(bs_def));
   
-    char *name2 = (char *)malloc(name_len);
-
     def->cols = bs_col_list_new(20);
+
+    char *name2 = (char *)malloc(name_len + 1);
     def->name = strncpy(name2, name, name_len);
-    def->name_len = name_len - 1;
+    def->name_len = name_len;
+
     def->doc  = pkg->doc;
     def->pkg  = pkg;
     def->id   = id;
@@ -70,14 +79,24 @@ void bs_def_free(bs_def *def) {
     free(def);
 }
 
-bs_col *bs_col_new(bs_def *def, char *name, size_t name_len, bs_type type) {
+bs_col *bs_col_new(bs_def *def, char *name, size_t name_len, char *ref_name, size_t ref_name_len, bs_type type) {
     bs_col *col = (bs_col *)malloc(sizeof(bs_col));
 
-    char *name2 = (char *)malloc(name_len);
-
     col->cols = bs_col_list_new(5);
+
+    char *name2 = (char *)malloc(name_len + 1);
     col->name = strncpy(name2, name, name_len);
-    col->name_len = name_len - 1;
+    col->name_len = name_len;
+
+    if (ref_name != NULL) {
+        char *ref_name2 = (char *)malloc(ref_name_len + 1);
+        col->ref_name = strncpy(ref_name2, ref_name, ref_name_len);
+        col->ref_name_len = ref_name_len;
+    } else {
+        col->ref_name = NULL;
+        col->ref_name_len = 0;
+    }
+
     col->doc  = def->doc;
     col->def  = def;
     col->type = type;
@@ -89,17 +108,19 @@ void bs_col_free(bs_col *col) {
     bs_col_list_free(col->cols);
 
     free(col->name);
+    free(col->ref_name);
     free(col);
 }
 
-bs_enum *bs_enum_new(char *name, size_t name_len, bs_type type) {
+bs_enum *bs_enum_new(bs_pkg *pkg, char *name, size_t name_len, bs_type type) {
     bs_enum *em = (bs_enum *)malloc(sizeof(bs_enum));
 
-    char *name2 = (char *)malloc(name_len);
-
     em->items = bs_enum_item_list_new(5);
+
+    char *name2 = (char *)malloc(name_len + 1);
     em->name = strncpy(name2, name, name_len);
     em->name_len = name_len;
+
     em->type = type;
 
     return em;
@@ -107,6 +128,7 @@ bs_enum *bs_enum_new(char *name, size_t name_len, bs_type type) {
 
 void bs_enum_free(bs_enum *em) {
     bs_enum_item_list_free(em->items);
+
     free(em->name);
     free(em);
 }
@@ -114,10 +136,10 @@ void bs_enum_free(bs_enum *em) {
 bs_enum_item *bs_enum_item_new(char *name, size_t name_len, long value) {
     bs_enum_item *item = (bs_enum_item *)malloc(sizeof(bs_enum_item));
 
-    char *name2 = (char *)malloc(name_len);
-
+    char *name2 = (char *)malloc(name_len + 1);
     item->name = strncpy(name2, name, name_len);
     item->name_len = name_len;
+
     item->value = value;
 
     return item;

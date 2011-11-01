@@ -72,7 +72,7 @@ HELP:
         if (bs_mode_test == mode)
             printf("ok\n");
         else if (bs_mode_format == mode)
-            bs_print_doc(result->doc, 0);
+            bs_print_doc(result->doc);
         else if (bs_mode_convert == mode) {
             bs_gen_php(result->doc, stdout);
             if (argc == 4)

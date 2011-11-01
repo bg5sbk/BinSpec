@@ -14,6 +14,7 @@ typedef enum {
     TK_EOF,
  
     TK_NAME,  // [a-zA-Z_][a-zA-Z0-9_]*
+    TK_FULL,  // [a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)*
     TK_NUM,   // [0-9]+
     TK_PKG,   // pkg  
     TK_DEF,   // def 
@@ -40,7 +41,7 @@ typedef enum {
     TK_L8, TK_L16, TK_L32, TK_L64,
 
     // enum
-    TK_E8, TK_E16, TK_E32, TK_E64
+    TK_EM
 } token_type;
 
 typedef struct {
@@ -290,6 +291,7 @@ inline static token next_token(context *ctx) {
     }
 
     /* name */
+NAME:
     if (isalpha(c) || '_' == c) {
         NEXT_CHAR();
         while (ctx->cur != ctx->end && 
@@ -297,7 +299,19 @@ inline static token next_token(context *ctx) {
             NEXT_CHAR();
             t.len ++;
         }
-        t.type = match_keyword(t.str, t.len);
+
+        if (ctx->cur != ctx->end && '.' == c) {
+            NEXT_CHAR();
+            t.len ++;
+
+            if (ctx->cur != ctx->end) {
+                t.type = TK_FULL;
+                goto NAME;
+            }
+        } else if (TK_FULL != t.type) {
+            t.type = match_keyword(t.str, t.len);
+        }
+
         return t;
     }
 
@@ -313,18 +327,42 @@ static void parse_cols(context *ctx, bs_def *def, bs_col_list *list) {
         char *name = t.str;
         size_t name_len = t.len;
 
-        LOOKUP(':', ':');
-        
-        if (TK_I8 > (t = next_token(ctx)).type) {
-            ctx->error = BS_ERR_BAD_TYPE;
-            return;
-        }
+        char *ref_name = NULL;
+        size_t ref_name_len = 0;
 
         bs_type type = t.type;
-        bs_col *col = bs_col_new(def, name, name_len, type);
+        
+        LOOKUP(':', ':');
+       
+        t = next_token(ctx);
+
+        if (TK_ENUM == t.type) {
+            LOOKUP('<', '<');
+            
+            t = next_token(ctx);
+
+            if (TK_NAME != t.type && TK_FULL != t.type) {
+                ctx->error = BS_ERR_MISS_NAME;
+                return;
+            }
+
+            ref_name = t.str;
+            ref_name_len = t.len;
+
+            LOOKUP('>', '>');
+
+            type = TK_EM;
+        } else if (TK_I8 > t.type) {
+            ctx->error = BS_ERR_BAD_TYPE;
+            return;
+        } else {
+            type = t.type;
+        }
+
+        bs_col *col = bs_col_new(def, name, name_len, ref_name, ref_name_len, type);
         bs_col_list_add(list, col);
 
-        if (TK_L8 <= t.type && TK_E64 >= t.type) {
+        if (TK_L8 <= t.type && TK_L64 >= t.type) {
             LOOKUP('{', '{');
 
             parse_cols(ctx, def, col->cols);
@@ -371,11 +409,14 @@ static void parse_enum(context *ctx, bs_pkg *pkg) {
     char *name = t.str;
     size_t name_len = t.len;
 
-    bs_enum *em = bs_enum_new(name, name_len, BS_TI8);
+    bs_enum *em = bs_enum_new(pkg, name, name_len, BS_TI8);
     bs_enum_list_add(pkg->enums, em);
 
-    if (':' == (t = next_token(ctx)).type) {
-        if (TK_I8 > (t = next_token(ctx)).type || TK_U64 < t.type) {
+    t = next_token(ctx);
+
+    if (':' == t.type) {
+        t = next_token(ctx);
+        if (TK_I8 > t.type || TK_U64 < t.type) {
             ctx->error = BS_ERR_BAD_TYPE;
             return;
         }
@@ -410,28 +451,32 @@ static void parse_enum(context *ctx, bs_pkg *pkg) {
     }
 }
 
-static void parse_pkg(context *ctx, bs_doc *doc, bs_pkg_list *list) {
-    token t; 
+static void parse_pkg(context *ctx, bs_doc *doc, bs_pkg *parent) {
+    token t;
 
     LOOKUP(TK_NAME, BS_ERR_MISS_NAME);
 
     char *name = t.str;
     size_t name_len = t.len;
+    int id = 0;
 
-    LOOKUP('=', '=');
-    LOOKUP(TK_NUM, BS_ERR_MISS_ID);
+    t = next_token(ctx);
 
-    int id = parse_int(t.str, t.len);
+    if ('=' == t.type) {
+        LOOKUP(TK_NUM, BS_ERR_MISS_ID);
+        id = parse_int(t.str, t.len);
+        t = next_token(ctx);
+    }
 
-    LOOKUP('{', '{');
+    LOOKUP2('{', '{');
 
-    bs_pkg *pkg = bs_pkg_new(doc, id, name, name_len + 0);
-    bs_pkg_list_add(list, pkg);
+    bs_pkg *pkg = bs_pkg_new(doc, parent, id, name, name_len);
+    bs_pkg_list_add(parent->pkgs, pkg);
 
     while (TK_EOF != (t = next_token(ctx)).type && '}' != t.type) {
         switch (t.type) {
             case TK_DEF: parse_def(ctx, pkg); break;
-            case TK_PKG: parse_pkg(ctx, doc, list); break;
+            case TK_PKG: parse_pkg(ctx, doc, pkg); break;
             case TK_ENUM: parse_enum(ctx, pkg); break;
             default: ctx->error = BS_ERR_UNKNOW; break;
         }
@@ -450,7 +495,7 @@ bs_parse_result *bs_parse(char *code, size_t code_len) {
 
     while (TK_EOF != (t = next_token(&ctx)).type && ctx.error == 0) {
         if (TK_PKG == t.type) {
-            parse_pkg(&ctx, doc, doc->pkgs);
+            parse_pkg(&ctx, doc, doc->root_pkg);
         } else {
             ctx.error = BS_ERR_UNKNOW;
         }

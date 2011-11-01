@@ -1,35 +1,27 @@
-/* asdasd */
-// asdkjaldajla
-pkg hello = 123 {
-  enum color : int {
-    red   = 1,
-    green = 2,
-    blue  = 3
-  }
+/* just a demo */
+pkg product = 123 
+{
+  /* get product list */
+  pkg get_list
+  {
+    /* colors */
+    enum color : int {
+      red   = 1,
+      green = 2,
+      blue  = 3
+    }
 
-  def xxx = 1 {
-    id : int, /* djaklds */
-    name : string,
-    items : list {
-      item_id : int64,
-      item_name : string,
-      sublist : list {
-        a : int
-      }
-    },
-    items2 : list {
-      item_id : int64,
-      item_name : string,
-      sublist : list {
-        a : int
+    def in  = 1 {
+      cat_id   : uint,      /* category */
+      page_num : uint       /* page number */
+    }
+
+    def out = 2 {
+      products : list {
+        id    : uint,
+        name  : string,
+        color : enum<color>
       }
     }
   }
-
-  def yyy = 2 {
-    hash : string,
-    time : int
-  }
 }
-
-/* alskdj */

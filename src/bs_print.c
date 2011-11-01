@@ -5,10 +5,20 @@
 
 #define TAB(level) { int i_; for(i_ = 0; i_ < level; i_ ++) printf("  "); }
 
-void bs_print_doc(bs_doc *doc, int level) {
+static void bs_print_pkg_list(bs_pkg_list *, int);
+static void bs_print_enum_list(bs_enum_list *, int);
+static void bs_print_def_list(bs_def_list *, int);
+static void bs_print_col_list(bs_col_list *, int);
+static void bs_print_type(bs_type);
+
+void bs_print_doc(bs_doc *doc) {
+    bs_print_pkg_list(doc->root_pkg->pkgs, 0);
+}
+
+static void bs_print_pkg_list(bs_pkg_list *list, int level) {
     int i;
-    for (i = 0; i < doc->pkgs->len; i ++) {
-        bs_pkg *pkg = bs_pkg_list_get(doc->pkgs, i);
+    for (i = 0; i < list->len; i ++) {
+        bs_pkg *pkg = bs_pkg_list_get(list, i);
 
         TAB(level);
         printf("pkg %s = %d\n", pkg->name, pkg->id);
@@ -16,6 +26,7 @@ void bs_print_doc(bs_doc *doc, int level) {
         printf("{\n");
 
         bs_print_enum_list(pkg->enums, level + 1);
+        bs_print_pkg_list(pkg->pkgs, level + 1);
         bs_print_def_list(pkg->defs, level + 1);
 
         TAB(level);
@@ -23,7 +34,7 @@ void bs_print_doc(bs_doc *doc, int level) {
     }
 }
 
-void bs_print_enum_list(bs_enum_list *list, int level) {
+static void bs_print_enum_list(bs_enum_list *list, int level) {
     int i;
     for (i = 0; i < list->len; i ++) {
         bs_enum *em = bs_enum_list_get(list, i);
@@ -69,7 +80,7 @@ void bs_print_enum_list(bs_enum_list *list, int level) {
     }
 }
 
-void bs_print_def_list(bs_def_list *list, int level) {
+static void bs_print_def_list(bs_def_list *list, int level) {
     int i;
     for (i = 0; i < list->len; i ++) {
         bs_def *def = bs_def_list_get(list, i);
@@ -86,7 +97,7 @@ void bs_print_def_list(bs_def_list *list, int level) {
     }
 }
 
-void bs_print_col_list(bs_col_list *list, int level) {
+static void bs_print_col_list(bs_col_list *list, int level) {
     TAB(level - 1);
     printf("{\n");
 
@@ -112,7 +123,9 @@ void bs_print_col_list(bs_col_list *list, int level) {
 
         bs_print_type(col->type);
 
-        if (BS_TL8 <= col->type && col->type <= BS_TL64) {
+        if (BS_TE == col->type) {
+            printf("<%s>", col->ref_name);
+        } else if (BS_TL8 <= col->type && col->type <= BS_TL64) {
             printf("\n");
             bs_print_col_list(col->cols, level + 1);
         }
@@ -127,7 +140,7 @@ void bs_print_col_list(bs_col_list *list, int level) {
     printf("}");
 }
 
-void bs_print_type(bs_type type) {
+static void bs_print_type(bs_type type) {
     switch (type) {
         case BS_TI8:  printf("int8");  break;
         case BS_TI16: printf("int16"); break;
@@ -139,10 +152,7 @@ void bs_print_type(bs_type type) {
         case BS_TU32: printf("uint32"); break;
         case BS_TU64: printf("uint64"); break;
 
-        case BS_TE8:  printf("enum8");  break;
-        case BS_TE16: printf("enum16"); break;
-        case BS_TE32: printf("enum32"); break;
-        case BS_TE64: printf("enum64"); break;
+        case BS_TE:  printf("enum");  break;
 
         case BS_TL8:  printf("list8");  break;
         case BS_TL16: printf("list16"); break;
