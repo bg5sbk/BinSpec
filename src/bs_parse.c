@@ -183,12 +183,11 @@ inline static token_type match_keyword(char *code, size_t len) {
 inline static void ignore_wac(context *ctx) {
     char c = *(ctx->cur);
 
-START:
-
-    /* ignore whitespace */
-    while (ctx->cur != ctx->end &&
-    (' ' == c || '\t' == c || '\r' == c || '\n' == c)) {
-        if ('\r' == c || '\n' == c) {
+    while (ctx->cur != ctx->end) {
+        if (' ' == c || '\t' == c) {
+            NEXT_CHAR();
+            continue;
+        } else if ('\r' == c || '\n' == c) {
             char t = c;
             ctx->line ++;
             ctx->column = 1;
@@ -197,60 +196,22 @@ START:
 
             if ('\r' == t && '\n' == c && ctx->cur != ctx->end)
                 NEXT_CHAR();
-        } else {
-            NEXT_CHAR();
-        }
-    }
 
-    /* ignore single line comment */
-    if (ctx->cur != ctx->end - 1 && '/' == c && '/' == *(ctx->cur + 1)) {
-        for (;;) {
+            continue;
+        } else if (ctx->cur != ctx->end - 1 && '/' == c && '/' == *(ctx->cur + 1)) {
             NEXT_CHAR();
 
-            if (ctx->cur == ctx->end)
-                return;
-
-            if ('\r' == c || '\n' == c) {
-                char t = c;
-                ctx->line ++;
-                ctx->column = 1;
-
+            while (ctx->cur != ctx->end) {
                 NEXT_CHAR();
 
-                if ('\r' == t && '\n' == c && ctx->cur != ctx->end)
-                    NEXT_CHAR();
-
-                goto START;
+                if ('\r' == c || '\n' == c)
+                    break;
             }
+
+            continue;
         }
-    }
 
-    /* ignore multi line comment */
-    if (ctx->cur != ctx->end - 1 && '/' == c && '*' == *(ctx->cur + 1)) {
-        for(;;) {
-            NEXT_CHAR();
-
-            if (ctx->cur >= ctx->end - 1)
-                return;
-
-            if ('*' == c && '/' == *(ctx->cur + 1)) {
-                NEXT_CHAR();
-                NEXT_CHAR();
-
-                goto START;
-            }
-
-            if ('\r' == c || '\n' == c) {
-                char t = c;
-                ctx->line ++;
-                ctx->column = 1;
-
-                NEXT_CHAR();
-
-                if ('\r' == t && '\n' == c && ctx->cur != ctx->end)
-                    NEXT_CHAR();
-            }
-        }
+        break;
     }
 }
 

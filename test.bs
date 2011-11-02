@@ -1,10 +1,10 @@
-/* just a demo */
+// just a demo
 pkg product = 123 
 {
-  /* get product list */
+  // get product list
   pkg get_list
   {
-    /* colors */
+    // colors
     enum color : int {
       red   = 1,
       green = 2,
@@ -12,8 +12,8 @@ pkg product = 123
     }
 
     def in  = 1 {
-      cat_id   : uint,      /* category */
-      page_num : uint       /* page number */
+      cat_id   : uint,      // category
+      page_num : uint       // page number
     }
 
     def out = 2 {
