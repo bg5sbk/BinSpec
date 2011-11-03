@@ -7,9 +7,10 @@
 
 static void bs_print_pkg_list(bs_pkg_list *, int);
 static void bs_print_enum_list(bs_enum_list *, int);
+static void bs_print_type_list(bs_type_list *, int);
 static void bs_print_def_list(bs_def_list *, int);
 static void bs_print_col_list(bs_col_list *, int);
-static void bs_print_type(bs_type);
+static void bs_print_type(bs_type_enum);
 
 void bs_print_doc(bs_doc *doc) {
     bs_print_pkg_list(doc->root_pkg->pkgs, 0);
@@ -26,12 +27,29 @@ static void bs_print_pkg_list(bs_pkg_list *list, int level) {
         printf("{\n");
 
         bs_print_enum_list(pkg->enums, level + 1);
+        bs_print_type_list(pkg->types, level + 1);
         bs_print_pkg_list(pkg->pkgs, level + 1);
         bs_print_def_list(pkg->defs, level + 1);
 
         TAB(level);
-        printf("}\n");
+        printf("}\n\n");
     }
+}
+
+static void bs_print_type_list(bs_type_list *list, int level) {
+    int i;
+    for (i = 0; i < list->len; i ++) {
+        bs_type *type = bs_type_list_get(list, i);
+
+        TAB(level);
+        printf("type %s\n", type->name);
+
+        bs_print_col_list(type->cols, level + 1);
+
+        printf("\n");
+
+        printf("\n");
+    }    
 }
 
 static void bs_print_enum_list(bs_enum_list *list, int level) {
@@ -123,7 +141,7 @@ static void bs_print_col_list(bs_col_list *list, int level) {
 
         bs_print_type(col->type);
 
-        if (BS_TE == col->type) {
+        if (BS_TE == col->type || BS_TY == col->type) {
             printf("<%s>", col->ref_name);
         } else if (BS_TL8 <= col->type && col->type <= BS_TL64) {
             printf("\n");
@@ -140,7 +158,7 @@ static void bs_print_col_list(bs_col_list *list, int level) {
     printf("}");
 }
 
-static void bs_print_type(bs_type type) {
+static void bs_print_type(bs_type_enum type) {
     switch (type) {
         case BS_TI8:  printf("int8");  break;
         case BS_TI16: printf("int16"); break;
@@ -152,7 +170,9 @@ static void bs_print_type(bs_type type) {
         case BS_TU32: printf("uint32"); break;
         case BS_TU64: printf("uint64"); break;
 
-        case BS_TE:  printf("enum");  break;
+        case BS_TE:   printf("enum");   break;
+
+        case BS_TY:   printf("type");   break;
 
         case BS_TL8:  printf("list8");  break;
         case BS_TL16: printf("list16"); break;

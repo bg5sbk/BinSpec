@@ -7,12 +7,13 @@ static void gen_def_list(FILE *file, bs_def_list *defs, int level);
 static void gen_col_list(FILE *file, bs_col_list *cols, int level);
 static void gen_enum_list(FILE *file, bs_enum_list *pkgs, int level);
 static void gen_enum_item_list(FILE *file, bs_enum_item_list *items, int level);
-static char *get_php_type(bs_type type);
+static void gen_type_list(FILE *file, bs_type_list *types, int level);
+static char *get_php_type(bs_type_enum type);
 
 void bs_gen_php(bs_doc *doc, FILE *file) {
     fprintf(file,
 "<?php\n"
-"  class bs_type {\n"
+"  class bs_types {\n"
 "    const int8  = %d;\n"
 "    const int16 = %d;\n"
 "    const int32 = %d;\n"
@@ -29,7 +30,8 @@ void bs_gen_php(bs_doc *doc, FILE *file) {
 "    const string16 = %d;\n"
 "    const string32 = %d;\n"
 "    const string64 = %d;\n\n"
-"    const enumtype  = %d;\n"
+"    const enumtype = %d;\n\n"
+"    const usertype = %d;\n"
 "  }\n\n"
 "  class bs_doc {\n"
 "    public $pkgs;\n"
@@ -43,12 +45,14 @@ void bs_gen_php(bs_doc *doc, FILE *file) {
 "    public $id;\n"
 "    public $name;\n"
 "    public $enums;\n"
+"    public $types;\n"
 "    public $pkgs;\n"
 "    public $defs;\n\n"
-"    function __construct($id, $name, $enums, $pkgs, $defs) {\n"
+"    function __construct($id, $name, $enums, $pkgs, $types, $defs) {\n"
 "      $this->id = $id;\n"
 "      $this->name = $name;\n"
 "      $this->enums = $enums;\n"
+"      $this->types = $types;\n"
 "      $this->pkgs = $pkgs;\n"
 "      $this->defs = $defs;\n"
 "    }\n"
@@ -93,13 +97,21 @@ void bs_gen_php(bs_doc *doc, FILE *file) {
 "      $this->value = $value;\n"
 "    }\n"
 "  }\n\n"
+"  class bs_type {\n"
+"    public $name;\n"
+"    public $cols;\n\n"
+"    function __construct($name, $cols) {\n"
+"      $this->name = $name;\n"
+"      $this->cols = $cols;\n"
+"    }\n"
+"  }\n\n"
 "  function bs_get_doc() {\n"
 "    return new bs_doc(array(\n",
     BS_TI8, BS_TI16, BS_TI32, BS_TI64,
     BS_TU8, BS_TU16, BS_TU32, BS_TU64,
     BS_TL8, BS_TL16, BS_TL32, BS_TL64,
     BS_TS8, BS_TS16, BS_TS32, BS_TS64,
-    BS_TE
+    BS_TE, BS_TY
     );
 
     gen_pkg_list(file, doc->root_pkg->pkgs, 0);
@@ -124,6 +136,14 @@ static void gen_pkg_list(FILE *file, bs_pkg_list *pkgs, int level) {
         if (pkg->enums->len > 0) {
             fprintf(file, "\n");
             gen_enum_list(file, pkg->enums, level + 1);
+            TAB();
+        }
+
+        fprintf(file, "), array(");
+
+        if (pkg->types->len > 0) {
+            fprintf(file, "\n");
+            gen_type_list(file, pkg->types, level + 1);
             TAB();
         }
 
@@ -190,6 +210,29 @@ static void gen_enum_item_list(FILE *file, bs_enum_item_list *items, int level) 
     }
 }
 
+static void gen_type_list(FILE *file, bs_type_list *types, int level) {
+    int i;
+    for (i = 0; i < types->len; i++) {
+        bs_type *type = bs_type_list_get(types, i);
+
+        TAB();
+        fprintf(file, "new bs_type('%s', array(", type->name);
+
+        if (type->cols->len > 0) {
+            fprintf(file, "\n");
+            gen_col_list(file, type->cols, level + 1);
+            TAB();
+        }
+
+        fprintf(file, "))");
+
+        if (i != types->len - 1)
+            fprintf(file, ",");
+
+        fprintf(file, "\n");
+    }
+}
+
 static void gen_def_list(FILE *file, bs_def_list *defs, int level) {
     int i;
     for (i = 0; i < defs->len; i++) {
@@ -240,25 +283,26 @@ static void gen_col_list(FILE *file, bs_col_list *cols, int level) {
     }
 }
 
-char *get_php_type(bs_type type) {
+char *get_php_type(bs_type_enum type) {
     switch (type) {
-        case BS_TI8:  return "bs_type::int8";
+        case BS_TI8:  return "bs_types::int8";
         case BS_TI16: return "bs_type:int16";
-        case BS_TI32: return "bs_type::int32";
-        case BS_TI64: return "bs_type::int64";
-        case BS_TU8:  return "bs_type::uint8";
-        case BS_TU16: return "bs_type::uint16";
-        case BS_TU32: return "bs_type::uint32";
-        case BS_TU64: return "bs_type::uint64";
-        case BS_TL8:  return "bs_type::list8";
-        case BS_TL16: return "bs_type::list16";
-        case BS_TL32: return "bs_type::list32";
-        case BS_TL64: return "bs_type::list64";
-        case BS_TS8:  return "bs_type::string8";
-        case BS_TS16: return "bs_type::string16";
-        case BS_TS32: return "bs_type::string32";
-        case BS_TS64: return "bs_type::string64";
-        case BS_TE:   return "bs_type::enumtype";
+        case BS_TI32: return "bs_types::int32";
+        case BS_TI64: return "bs_types::int64";
+        case BS_TU8:  return "bs_types::uint8";
+        case BS_TU16: return "bs_types::uint16";
+        case BS_TU32: return "bs_types::uint32";
+        case BS_TU64: return "bs_types::uint64";
+        case BS_TL8:  return "bs_types::list8";
+        case BS_TL16: return "bs_types::list16";
+        case BS_TL32: return "bs_types::list32";
+        case BS_TL64: return "bs_types::list64";
+        case BS_TS8:  return "bs_types::string8";
+        case BS_TS16: return "bs_types::string16";
+        case BS_TS32: return "bs_types::string32";
+        case BS_TS64: return "bs_types::string64";
+        case BS_TE:   return "bs_types::enumtype";
+        case BS_TY:   return "bs_types::usertype";
     }
     return "";
 }

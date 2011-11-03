@@ -1,6 +1,12 @@
 // just a demo
 pkg product = 123 
 {
+  type my_type
+  {
+    id : int,
+    name : string
+  }
+
   // get product list
   pkg get_list
   {
@@ -23,5 +29,10 @@ pkg product = 123
         color : enum<color>
       }
     }
+  }
+  
+  def my_type_test
+  {
+    field : type<my_type>
   }
 }

@@ -3,9 +3,9 @@
 
 #include "gen_list.h"
 
-typedef enum bs_type bs_type;
+typedef enum bs_type_enum bs_type_enum;
 
-enum bs_type {
+enum bs_type_enum {
     /* integer */
     BS_TI8 = 130, BS_TI16, BS_TI32, BS_TI64,
     
@@ -19,7 +19,10 @@ enum bs_type {
     BS_TL8, BS_TL16, BS_TL32, BS_TL64,
 
     /* enum */
-    BS_TE
+    BS_TE,
+
+    /* type */
+    BS_TY
 };
 
 typedef struct bs_doc bs_doc;
@@ -28,12 +31,14 @@ typedef struct bs_def bs_def;
 typedef struct bs_col bs_col;
 typedef struct bs_enum bs_enum;
 typedef struct bs_enum_item bs_enum_item;
+typedef struct bs_type bs_type;
 
 LIST_DEF(bs_pkg_list, bs_pkg *);
 LIST_DEF(bs_def_list, bs_def *);
 LIST_DEF(bs_col_list, bs_col *);
 LIST_DEF(bs_enum_list, bs_enum *);
 LIST_DEF(bs_enum_item_list, bs_enum_item *);
+LIST_DEF(bs_type_list, bs_type *);
 
 struct bs_doc {
     bs_pkg *root_pkg;
@@ -50,6 +55,7 @@ struct bs_pkg {
     bs_pkg_list  *pkgs;
     bs_def_list  *defs;
     bs_enum_list *enums;
+    bs_type_list *types;
 };
 
 struct bs_def {
@@ -73,7 +79,7 @@ struct bs_col {
     char    *ref_name;
     size_t   ref_name_len;
 
-    bs_type  type;
+    bs_type_enum  type;
 
     bs_col_list *cols;
 };
@@ -81,7 +87,7 @@ struct bs_col {
 struct bs_enum {
     char    *name;
     size_t   name_len;
-    bs_type  type;
+    bs_type_enum  type;
 
     bs_enum_item_list *items;
 };
@@ -92,29 +98,42 @@ struct bs_enum_item {
     long   value;
 };
 
+struct bs_type {
+    bs_pkg *pkg;
+
+    char  *name;
+    size_t name_len;
+
+    bs_col_list *cols;
+};
+
 bs_doc *bs_doc_new();
 
 void bs_doc_free(bs_doc *doc);
 
-bs_pkg *bs_pkg_new(bs_doc *doc, bs_pkg *pkg, int id, char *name, size_t name_len);
+bs_pkg *bs_pkg_new(bs_doc *doc, bs_pkg *pkg, int id, const char *name, size_t name_len);
 
 void bs_pkg_free(bs_pkg *pkg);
 
-bs_def *bs_def_new(bs_pkg *pkg, int id, char *name, size_t name_len);
+bs_def *bs_def_new(bs_pkg *pkg, int id, const char *name, size_t name_len);
 
 void bs_def_free(bs_def *def);
 
-bs_col *bs_col_new(bs_def *def, char *name, size_t name_len, char *ref_name, size_t ref_name_len, bs_type type);
+bs_col *bs_col_new(const char *name, size_t name_len, const char *ref_name, size_t ref_name_len, bs_type_enum type);
 
 void bs_col_free(bs_col *col);
 
-bs_enum *bs_enum_new(bs_pkg *pkg, char *name, size_t name_len, bs_type type);
+bs_enum *bs_enum_new(bs_pkg *pkg, const char *name, size_t name_len, bs_type_enum type);
 
 void bs_enum_free(bs_enum *em);
 
-bs_enum_item *bs_enum_item_new(char *name, size_t name_len, long value);
+bs_enum_item *bs_enum_item_new(const char *name, size_t name_len, long value);
 
 void bs_enum_item_free(bs_enum_item *item);
+
+bs_type *bs_type_new(bs_pkg *pkg, const char *name, size_t name_len);
+
+void bs_type_free(bs_type *type);
 
 #endif
 
