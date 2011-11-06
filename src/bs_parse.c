@@ -224,8 +224,6 @@ inline static void ignore_wac(context *ctx) {
 inline static token next_token(context *ctx) {
     ignore_wac(ctx);
 
-    char c = *(ctx->cur);
-
     token t = {TK_UNKNOW, ctx->cur, 1};
     
     /* end of file */
@@ -233,6 +231,8 @@ inline static token next_token(context *ctx) {
         t.type = TK_EOF;
         return t;
     }
+
+    char c = *(ctx->cur);
 
     /* operators */
     switch (c) {

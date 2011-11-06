@@ -34,7 +34,10 @@ bs_pkg *bs_pkg_new(bs_doc *doc, bs_pkg *parent, int id, const char *name, size_t
     pkg->types = bs_type_list_new(2);
 
     if (name != NULL) {
-        char *name2 = (char *)malloc(name_len + 1);
+        size_t name2_len = name_len + 1;
+        char *name2 = (char *)malloc(name2_len);
+        bzero(name2, name2_len);
+
         pkg->name = strncpy(name2, name, name_len);
         pkg->name_len = name_len;
     } else {
@@ -64,7 +67,10 @@ bs_def *bs_def_new(bs_pkg *pkg, int id, const char *name, size_t name_len) {
   
     def->cols = bs_col_list_new(20);
 
+    size_t name2_len = name_len + 1;
     char *name2 = (char *)malloc(name_len + 1);
+    bzero(name2, name2_len);
+
     def->name = strncpy(name2, name, name_len);
     def->name_len = name_len;
 
@@ -87,12 +93,18 @@ bs_col *bs_col_new(const char *name, size_t name_len, const char *ref_name, size
 
     col->cols = bs_col_list_new(5);
 
+    size_t name2_len = name_len + 1;
     char *name2 = (char *)malloc(name_len + 1);
+    bzero(name2, name2_len);
+
     col->name = strncpy(name2, name, name_len);
     col->name_len = name_len;
 
     if (ref_name != NULL) {
+        size_t ref_name2_len = ref_name_len + 1;
         char *ref_name2 = (char *)malloc(ref_name_len + 1);
+        bzero(ref_name2, ref_name2_len);
+
         col->ref_name = strncpy(ref_name2, ref_name, ref_name_len);
         col->ref_name_len = ref_name_len;
     } else {
@@ -118,7 +130,10 @@ bs_enum *bs_enum_new(bs_pkg *pkg, const char *name, size_t name_len, bs_type_enu
 
     em->items = bs_enum_item_list_new(5);
 
+    size_t name2_len = name_len + 1;
     char *name2 = (char *)malloc(name_len + 1);
+    bzero(name2, name2_len);
+
     em->name = strncpy(name2, name, name_len);
     em->name_len = name_len;
 
@@ -137,7 +152,10 @@ void bs_enum_free(bs_enum *em) {
 bs_enum_item *bs_enum_item_new(const char *name, size_t name_len, long value) {
     bs_enum_item *item = (bs_enum_item *)malloc(sizeof(bs_enum_item));
 
+    size_t name2_len = name_len + 1;
     char *name2 = (char *)malloc(name_len + 1);
+    bzero(name2, name2_len);
+
     item->name = strncpy(name2, name, name_len);
     item->name_len = name_len;
 
@@ -158,7 +176,10 @@ bs_type *bs_type_new(bs_pkg *pkg, const char *name, size_t name_len) {
 
     type->cols = bs_col_list_new(5);
 
+    size_t name2_len = name_len + 1;
     char *name2 = (char *)malloc(name_len + 1);
+    bzero(name2, name2_len);
+
     type->name = strncpy(name2, name, name_len);
     type->name_len = name_len;
 

@@ -100,7 +100,7 @@ static char *file_get_contents(const char *path, size_t *size) {
     *size = ftell(file);
     rewind(file);
 
-    if (NULL == (buffer = (char *)malloc(sizeof(char) * (*size)))) {
+    if (NULL == (buffer = (char *)malloc(sizeof(char) * (*size) + 1))) {
         fclose(file);
         *size = -1;
         return NULL;
